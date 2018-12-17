@@ -86,14 +86,41 @@ function GameView(gameFacade) {
 
     this.linesContainer = new PIXI.Container();
     this.cellsContainer = new PIXI.Container();
-    this.addChild(this.linesContainer, this.cellsContainer);
+    this.addChild(this.cellsContainer, this.linesContainer);
 }
 
 GameView.prototype = new PIXI.Container();
+
 GameView.prototype.drawLines = function () {
-    // this.gameFacade.model.rows
+    var rows = this.gameFacade.model.rows;
+    var column = this.gameFacade.model.column;
+
+    var verticalLine = function () {
+        return new PIXI.Graphics().lineStyle(2, 0x222222).moveTo(0, 0).lineTo(0, CellView.CELL_HEIGHT * rows)
+    };
+    var horizontalLine = function () {
+        return new PIXI.Graphics().lineStyle(2, 0x222222).moveTo(0, 0).lineTo(CellView.CELL_WIDTH * column, 0);
+    };
+    var i, theLine;
+
+    for (i = 1; i < rows; i++) {
+        theLine = horizontalLine();
+        theLine.position.set(0, CellView.CELL_HEIGHT * i);
+        this.linesContainer.addChild(theLine);
+    }
+
+    for (i = 1; i < column; i++) {
+        theLine = verticalLine();
+        theLine.position.set(CellView.CELL_WIDTH * i, 0);
+        this.linesContainer.addChild(theLine);
+    }
+};
+GameView.prototype.clear = function () {
+    this.linesContainer.removeChildren();
+    this.cellsContainer.removeChildren();
 };
 GameView.prototype.draw = function () {
+
     var field = this.gameFacade.model.field;
 
     for (var i = 0; i < field.length; i++) {
@@ -104,6 +131,7 @@ GameView.prototype.draw = function () {
             this.cellsContainer.addChild(cell);
         }
     }
+    this.drawLines();
 };
 
 // the Game Facade
@@ -141,4 +169,5 @@ globals.app.start();
 
 globals.game = new Game(5, 5, 3);
 globals.app.stage.addChild(globals.game.view);
+globals.game.view.position.set(50, 50);
 globals.game.view.draw();
