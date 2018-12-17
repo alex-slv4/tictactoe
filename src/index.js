@@ -41,6 +41,7 @@ function GameModel(column, rows) {
     this.field = [];
     this.openedCells = 0;
     this.totalCells = rows * column;
+    this.state = GameModel.STATE_IN_GAME;
 
     for (var i = 0; i < rows; i++) {
         this.field[i] = [];
@@ -53,6 +54,9 @@ function GameModel(column, rows) {
 GameModel.prototype.hasCells = function () {
     return this.totalCells > this.openedCells;
 };
+GameModel.STATE_IN_GAME = "STATE_IN_GAME";
+GameModel.STATE_USER_WON = "STATE_USER_WON";
+GameModel.STATE_CAT_GAME = "STATE_CAT_GAME";
 
 // view
 function CellView(model) {
@@ -154,6 +158,9 @@ GameView.prototype.draw = function () {
     }
     this.drawLines();
 };
+GameView.prototype.displayWinning = function () {
+    // this.model.winLines
+};
 
 // the Game Facade
 function Game(rows, column, winCount) {
@@ -198,13 +205,11 @@ Game.prototype.getWinLine = function (centerCell, dx, dy) {
     while (el = previous(el)) {
         result.push(el);
     }
-    return result;
+    if (result.length > this.winCount) {
+        return result;
+    }
 };
 Game.prototype.hasWon = function (startCell) {
-    // set the owner of the cell
-    startCell.owner = this.activePlayer;
-    startCell.opened = true;
-    this.model.openedCells++;
 
     var horizontal = this.getWinLine(startCell, 1, 0); // horizontal
     var vertical = this.getWinLine(startCell, 0, 1); // vertical
@@ -212,21 +217,30 @@ Game.prototype.hasWon = function (startCell) {
     var left_down = this.getWinLine(startCell, -1, 1); // left-down diagonal
     var down_right = this.getWinLine(startCell, -1, -1); // down-right diagonal
 
-    if (horizontal.length >= this.winCount) {
-        console.log("horizontal", horizontal.join(", "));
-    }
-    if (vertical.length >= this.winCount) {
-        console.log("vertical", vertical.join(", "));
-    }
-    if (left_down.length >= this.winCount) {
-        console.log("left_down", left_down.join(", "));
-    }
-    if (down_right.length >= this.winCount) {
-        console.log("down_right", down_right.join(", "));
-    }
+    var winLines = [];
 
-    if (this.model.hasCells()) {
-        // cat game case
+    if (horizontal) {
+        winLines.push(horizontal);
+    }
+    if (vertical) {
+        winLines.push(vertical);
+    }
+    if (left_down) {
+        winLines.push(left_down);
+    }
+    if (down_right) {
+        winLines.push(down_right);
+    }
+    if (winLines.length) {
+        this.model.winLines = winLines;
+        this.model.state = GameModel.STATE_USER_WON;
+        return true;
+    } else {
+        // check the cat game case!
+        if (!this.model.hasCells()) {
+            this.model.state = GameModel.STATE_CAT_GAME;
+            return false;
+        }
     }
 };
 Game.prototype.hitCell = function (cellModel, cellView) {
@@ -234,9 +248,16 @@ Game.prototype.hitCell = function (cellModel, cellView) {
         // do nothing in case if the cell already opened
         return;
     }
+    this.model.openedCells++;
+    // set the owner of the cell
+    cellModel.owner = this.activePlayer;
+    cellModel.opened = true;
+    if (cellView) {
+        cellView.draw();
+    }
 
     if (this.hasWon(cellModel)) {
-        debugger;
+        this.view.displayWinning();
     } else {
         // switch the player's turn
         switch (this.activePlayer) {
@@ -247,10 +268,6 @@ Game.prototype.hitCell = function (cellModel, cellView) {
                 this.activePlayer = CellModel.PLAYER_X;
                 break;
         }
-    }
-
-    if (cellView) {
-        cellView.draw();
     }
 };
 
