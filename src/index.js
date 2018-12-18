@@ -3,25 +3,9 @@ var globals = {app: null, game: null};
 globals.app = new PIXI.Application({backgroundColor: 0xffffff});
 document.body.appendChild(globals.app.view);
 
-// window resize logic
-(function () {
-    var app = globals.app;
-    var theGame = globals.game;
-
-    function resize() {
-        app.renderer.resize(app.view.clientWidth, app.view.clientHeight);
-        // if (theGame) {
-        //     theGame.resize()
-        // }
-    }
-
-    window.addEventListener("resize", resize.bind(this));
-    resize();
-})();
-
 // model
-function CellModel(owner, posX, posY) {
-    this.owner = owner;
+function CellModel(posX, posY) {
+    this.owner = CellModel.PLAYER_NONE;
     this.posX = posX;
     this.posY = posY;
     this.opened = false;
@@ -29,6 +13,10 @@ function CellModel(owner, posX, posY) {
     this.toString = function () {
         return "[" + this.owner + ": " + this.posX + "," + this.posY + "]";
     };
+    this.reset = function() {
+        this.owner = CellModel.PLAYER_NONE;
+        this.opened = false;
+    }
 }
 
 CellModel.PLAYER_NONE = "";
@@ -46,13 +34,22 @@ function GameModel(column, rows) {
     for (var i = 0; i < rows; i++) {
         this.field[i] = [];
         for (var j = 0; j < column; j++) {
-            this.field[i][j] = new CellModel(CellModel.PLAYER_NONE, i, j);
+            this.field[i][j] = new CellModel(i, j);
         }
     }
 }
 
 GameModel.prototype.hasCells = function () {
     return this.totalCells > this.openedCells;
+};
+GameModel.prototype.reset = function () {
+    this.openedCells = 0;
+    for (var i = 0; i < this.rows; i++) {
+        for (var j = 0; j < this.column; j++) {
+            this.field[i][j].reset();
+        }
+    }
+    this.state = GameModel.STATE_IN_GAME;
 };
 GameModel.STATE_IN_GAME = "STATE_IN_GAME";
 GameModel.STATE_USER_WON = "STATE_USER_WON";
@@ -107,7 +104,7 @@ CellView.prototype.draw = function () {
 function GameView(gameFacade) {
     PIXI.Container.call(this);
     this.gameFacade = gameFacade;
-
+    this.cells = [];
     this.linesContainer = new PIXI.Container();
     this.cellsContainer = new PIXI.Container();
     this.addChild(this.cellsContainer, this.linesContainer);
@@ -144,35 +141,65 @@ GameView.prototype.clear = function () {
     this.linesContainer.removeChildren();
     this.cellsContainer.removeChildren();
 };
+GameView.prototype.getCellView = function (cell) {
+    return this.cells[cell.posX][cell.posY];
+};
 GameView.prototype.draw = function () {
+
+    this.linesContainer.removeChildren();
+    this.cellsContainer.removeChildren();
 
     var field = this.gameFacade.model.field;
 
     for (var i = 0; i < field.length; i++) {
+        this.cells[i] = [];
         for (var j = 0; j < field[i].length; j++) {
             var cell = new CellView(field[i][j]);
             cell.draw();
             cell.position.set(i * CellView.CELL_WIDTH, j * CellView.CELL_HEIGHT);
             this.cellsContainer.addChild(cell);
+            this.cells[i].push(cell);
         }
     }
     this.drawLines();
 };
-GameView.prototype.displayWinning = function () {
-    // this.model.winLines
+GameView.prototype.drawCrossLine = function (from, to) {
+    var halfCellX = CellView.CELL_WIDTH * 0.5;
+    var halfCellY = CellView.CELL_HEIGHT * 0.5;
+    var line = new PIXI.Graphics().lineStyle(10, 0xff0000).moveTo(from.x + halfCellX, from.y + halfCellY).lineTo(to.x + halfCellX, to.y + halfCellY);
+    this.linesContainer.addChild(line);
+};
+GameView.prototype.displayWinning = function (winlines) {
+
+    for (var i = 0; i < winlines.length; i++) {
+        var winline = winlines[i];
+        var firstCell = this.getCellView(winline[0]);
+        var lastCell = this.getCellView(winline[winline.length - 1]);
+        this.drawCrossLine(firstCell, lastCell);
+    }
 };
 
 // the Game Facade
-function Game(rows, column, winCount) {
+function Game() {
+    // nothing here, use create function
+}
+Game.prototype.create = function(rows, column, winCount) {
     this.activePlayer = CellModel.PLAYER_X;
     this.model = new GameModel(rows, column);
     this.view = new GameView(this);
     this.winCount = isNaN(winCount) ? Math.min(rows, column) : winCount;
-}
 
+    return this;
+};
+Game.prototype.restart = function() {
+    this.activePlayer = CellModel.PLAYER_X;
+    this.model.reset();
+    this.view.draw();
+};
 Game.prototype.getWinLine = function (centerCell, dx, dy) {
     var field = this.model.field;
-    var result = [centerCell];
+    var prevCells = [];
+    var nextCells = [];
     var el;
 
     function getOwnedCellAt(x, y) {
@@ -199,15 +226,21 @@ Game.prototype.getWinLine = function (centerCell, dx, dy) {
 
     el = centerCell;
     while (el = next(el)) {
-        result.push(el);
+        nextCells.push(el);
     }
     el = centerCell;
     while (el = previous(el)) {
-        result.push(el);
+        prevCells.push(el);
     }
-    if (result.length > this.winCount) {
-        return result;
+    var lineLength = prevCells.length + 1 + nextCells.length;
+    if (lineLength > this.winCount) {
+        // return the line array in natural order
+        return prevCells.reverse().concat([centerCell]).concat(nextCells);
     }
+};
+Game.prototype.resize = function(width, height) {
+    var center = new PIXI.Point((width - this.view.width) * 0.5, (height - this.view.height) * 0.5);
+    this.view.position.copy(center);
 };
 Game.prototype.hasWon = function (startCell) {
 
@@ -244,6 +277,10 @@ Game.prototype.hasWon = function (startCell) {
     }
 };
 Game.prototype.hitCell = function (cellModel, cellView) {
+    if (this.model.state !== GameModel.STATE_IN_GAME) {
+        this.restart();
+        return;
+    }
     if (cellModel.opened) {
         // do nothing in case if the cell already opened
         return;
@@ -257,7 +294,7 @@ Game.prototype.hitCell = function (cellModel, cellView) {
     }
 
     if (this.hasWon(cellModel)) {
-        this.view.displayWinning();
+        this.view.displayWinning(this.model.winLines);
     } else {
         // switch the player's turn
         switch (this.activePlayer) {
@@ -271,7 +308,16 @@ Game.prototype.hitCell = function (cellModel, cellView) {
     }
 };
 
+globals.onWindowResize = function() {
+    var width = this.app.view.clientWidth;
+    var height = this.app.view.clientHeight;
+    this.app.renderer.resize(width, height);
+    this.game.resize(width, height);
+};
+window.addEventListener("resize", globals.onWindowResize.bind(globals));
+
 // create and run the game
-globals.game = new Game(7, 7, 3);
+globals.game = new Game().create(7, 7, 3);
 globals.app.stage.addChild(globals.game.view);
+globals.onWindowResize();
 globals.app.start();
