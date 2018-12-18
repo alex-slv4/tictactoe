@@ -237,16 +237,14 @@ document.body.appendChild(globals.app.view);
     "cross-red.svg",
     "nought-black.svg",
     "nought-red.svg",
-    "line.svg"
+    "line-black.svg",
+    "line-red.svg"
 ]);
 
 function startTheGame() {
     // create and run the game
-    globals.game = new Game().create(7, 7, 3);
+    globals.game = new Game().create(5, 5, 4);
     globals.app.stage.addChild(globals.game.view);
-
-    globals.app.stage.addChild(new PIXI.Sprite(PIXI.Texture.fromImage("line.svg", false)));
-
     window.addEventListener("resize", globals.onWindowResize.bind(globals));
     globals.onWindowResize();
 }

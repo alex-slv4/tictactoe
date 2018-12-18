@@ -3,51 +3,46 @@ function CellView(model) {
     PIXI.Container.call(this);
     this.model = model;
     this.hit = new PIXI.Graphics().beginFill(0, 0).drawRect(0, 0, CellView.CELL_WIDTH, CellView.CELL_HEIGHT).endFill();
-    var signColor = 0x999999;
-    var w = CellView.CELL_WIDTH * 0.65;
-    var h = CellView.CELL_HEIGHT * 0.65;
-    var px = (CellView.CELL_WIDTH - w) * 0.5;
-    var py = (CellView.CELL_HEIGHT - h) * 0.5;
-    this.crossSign = new PIXI.Graphics().lineStyle(3, signColor).moveTo(0, 0)
-        .lineTo(w, h)
-        .moveTo(w, 0)
-        .lineTo(0, h);
-    this.crossSign.position.set(px, py);
 
-    const zeroR = Math.min(w, h) * 0.5;
-    this.zeroSign = new PIXI.Graphics().lineStyle(3, signColor).drawCircle(zeroR, zeroR, zeroR).endFill();
-    this.zeroSign.position.set(px, py);
+    this.crossSign = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    this.zeroSign = new PIXI.Sprite(PIXI.Texture.EMPTY);
+
     this.addChild(this.hit);
     this.addChild(this.zeroSign);
     this.addChild(this.crossSign);
+    this.zeroSign.alpha = this.crossSign.alpha = 0.7;
     this.zeroSign.visible = this.crossSign.visible = false;
     this.hit.interactive = this.hit.buttonMode = true;
 
     this.onDown = function () {
         globals.game.hitCell(this.model, this);
     };
+    this.select(false);
     this.hit.on("pointerdown", this.onDown.bind(this)) // TODO: call the off after destroy
 }
 
-CellView.CELL_WIDTH = 100; // TODO: check different size for cells
-CellView.CELL_HEIGHT = 100;
+CellView.CELL_WIDTH = 80;
+CellView.CELL_HEIGHT = 90;
 CellView.prototype = new PIXI.Container();
-CellView.prototype.clear = function () {
-    // this.zeroSign.visible = this.crossSign.visible = false;
-};
-CellView.prototype.select = function () {
-    // TODO: draw in red
+CellView.prototype.select = function (selected) {
+    var suffix = selected ? "red" : "black";
+
+    this.crossSign.texture = PIXI.utils.TextureCache["cross-" + suffix + ".svg"];
+    this.zeroSign.texture = PIXI.utils.TextureCache["nought-" + suffix + ".svg"];
+
+    this.crossSign.anchor.set(0.5);
+    this.zeroSign.anchor.set(0.5);
+    this.crossSign.position.set(CellView.CELL_WIDTH * 0.5, CellView.CELL_HEIGHT * 0.5);
+    this.zeroSign.position.set(CellView.CELL_WIDTH * 0.5, CellView.CELL_HEIGHT * 0.5);
 };
 CellView.prototype.draw = function () {
-    this.clear();
+    this.zeroSign.visible = this.crossSign.visible = false;
     if (this.model.owner === CellModel.PLAYER_O) {
         this.zeroSign.visible = true;
     } else if (this.model.owner === CellModel.PLAYER_X) {
         this.crossSign.visible = true;
     }
 };
-
-
 
 
 function GameView(gameFacade) {
@@ -66,10 +61,19 @@ GameView.prototype.drawGridLines = function () {
     var column = this.gameFacade.model.column;
 
     var verticalLine = function () {
-        return new PIXI.Graphics().lineStyle(2, 0xeeeeee).moveTo(0, 0).lineTo(0, CellView.CELL_HEIGHT * rows)
+        var line = new PIXI.Sprite(PIXI.utils.TextureCache["line-black.svg"]);
+        line.width = CellView.CELL_HEIGHT * rows;
+        line.rotation = Math.PI / 2;
+        line.alpha = 0.1;
+        return line;
+        //return new PIXI.Graphics().lineStyle(1.5, 0xeeeeee).moveTo(0, 0).lineTo(0, CellView.CELL_HEIGHT * rows)
     };
     var horizontalLine = function () {
-        return new PIXI.Graphics().lineStyle(2, 0xeeeeee).moveTo(0, 0).lineTo(CellView.CELL_WIDTH * column, 0);
+        var line = new PIXI.Sprite(PIXI.utils.TextureCache["line-black.svg"]);
+        line.width = CellView.CELL_WIDTH * column;
+        line.alpha = 0.1;
+        return line;
+        // return new PIXI.Graphics().lineStyle(1.5, 0xeeeeee).moveTo(0, 0).lineTo(CellView.CELL_WIDTH * column, 0);
     };
     var i, theLine;
 
@@ -124,9 +128,13 @@ GameView.prototype.draw = function () {
  * @param to – the cell
  */
 GameView.prototype.drawCrossLine = function (from, to) {
-    var halfCellX = CellView.CELL_WIDTH * 0.5;
-    var halfCellY = CellView.CELL_HEIGHT * 0.5;
-    var line = new PIXI.Graphics().lineStyle(10, 0xff0000).moveTo(from.x + halfCellX, from.y + halfCellY).lineTo(to.x + halfCellX, to.y + halfCellY);
+    var p1 = new PIXI.Point(from.x + CellView.CELL_WIDTH * 0.5, from.y + CellView.CELL_HEIGHT * 0.5);
+    var p2 = new PIXI.Point(to.x + CellView.CELL_WIDTH * 0.5, to.y + CellView.CELL_HEIGHT * 0.5);
+
+    var line = new PIXI.Sprite(PIXI.utils.TextureCache["line-red.svg"]);
+    line.position.copy(p1);
+    line.width = Math.sqrt(Math.pow((p1.x - p2.x), 2) + Math.pow((p1.y - p2.y), 2)); // distance between points
+    line.rotation = Math.atan2(p2.y - p1.y, p2.x - p1.x); // angle between points
     this.linesContainer.addChild(line);
 };
 GameView.prototype.displayWinning = function (winlines) {
@@ -139,7 +147,7 @@ GameView.prototype.displayWinning = function (winlines) {
 
         for (var j = 0; j < winline.length; j++) {
             var cell = this.getCellView(winline[j]);
-            cell.select();
+            cell.select(true);
         }
     }
 };
