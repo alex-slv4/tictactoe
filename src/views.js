@@ -68,15 +68,22 @@ function GameView(gameFacade) {
     PIXI.Container.call(this);
     this.gameFacade = gameFacade;
     this.cells = [];
+    this.label = new PIXI.Text();
     this.gridContainer = new PIXI.Container();
     this.cellsContainer = new PIXI.Container();
     this.topContainer = new PIXI.Container();
-    this.addChild(this.cellsContainer, this.gridContainer, this.topContainer);
+    this.addChild(this.cellsContainer, this.gridContainer, this.topContainer, this.label);
     this.drawBackground();
     this.drawField();
 }
 
 GameView.prototype = new PIXI.Container();
+
+GameView.prototype.displayText = function (text) {
+    this.label.text = text;
+    this.label.position.x = (this.gridContainer.width - this.label.width) * 0.5;
+    this.label.position.y = -this.label.height;
+};
 /**
  * Draws the grid lines
  */

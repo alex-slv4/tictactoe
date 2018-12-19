@@ -8,10 +8,12 @@ var globals = {app: null, game: null};
  */
 function GameModel(column, rows) {
     this.rows = rows;
+    this.tutorialPassed = false;
     this.column = column;
     this.field = [];
     this.openedCells = 0;
     this.totalCells = rows * column;
+    this.activePlayer = CellModel.PLAYER_X;
     this.state = GameModel.STATE_IN_GAME;
 
     for (var i = 0; i < rows; i++) {
@@ -33,6 +35,7 @@ GameModel.prototype.hasCells = function () {
  * Clear the field. Reset state.
  */
 GameModel.prototype.reset = function () {
+    this.activePlayer = CellModel.PLAYER_X;
     this.openedCells = 0;
     for (var i = 0; i < this.rows; i++) {
         for (var j = 0; j < this.column; j++) {
@@ -78,11 +81,12 @@ function Game() {}
  * @returns {Game}
  */
 Game.prototype.create = function (rows, column, winCount) {
-    this.activePlayer = CellModel.PLAYER_X;
     this.model = new GameModel(rows, column);
     this.view = new GameView(this);
     this.winCount = isNaN(winCount) ? Math.min(rows, column) : winCount;
-
+    if (!this.model.tutorialPassed) {
+        this.view.displayText("Click on any cell to put " + this.model.activePlayer);
+    }
     return this;
 };
 /**
@@ -181,6 +185,7 @@ Game.prototype.hasWon = function (startCell) {
  */
 Game.prototype.hitCell = function (cellModel, cellView) {
     if (this.model.state !== GameModel.STATE_IN_GAME) {
+        this.view.displayText("");
         this.reset();
         return;
     }
@@ -190,7 +195,7 @@ Game.prototype.hitCell = function (cellModel, cellView) {
     }
     this.model.openedCells++;
     // set the owner of the cell
-    cellModel.owner = this.activePlayer;
+    cellModel.owner = this.model.activePlayer;
     cellModel.opened = true;
     if (cellView) {
         cellView.update();
@@ -198,15 +203,28 @@ Game.prototype.hitCell = function (cellModel, cellView) {
 
     if (this.hasWon(cellModel)) {
         this.view.displayWinning(this.model.winLines);
+        this.view.displayText(this.model.activePlayer + " won!");
     } else {
         // switch the player's turn
-        switch (this.activePlayer) {
+        switch (this.model.activePlayer) {
             case CellModel.PLAYER_X:
-                this.activePlayer = CellModel.PLAYER_O;
+                this.model.activePlayer = CellModel.PLAYER_O;
                 break;
             case CellModel.PLAYER_O:
-                this.activePlayer = CellModel.PLAYER_X;
+                this.model.activePlayer = CellModel.PLAYER_X;
                 break;
+        }
+        if (!this.model.tutorialPassed) {
+            if (this.model.openedCells === 1) {
+                this.view.displayText("Now you are playing for " + this.model.activePlayer);
+            } else if (this.model.openedCells === 2) {
+                this.view.displayText("Try to get " + this.winCount + " in a row");
+            } else if (this.model.openedCells === 3) {
+                this.view.displayText("Good luck!");
+            } else if (this.model.openedCells === 4) {
+                this.view.displayText("");
+                this.model.tutorialPassed = true;
+            }
         }
     }
 };
@@ -223,7 +241,6 @@ Game.prototype.resize = function (width, height) {
  * Recreate the game. Clears the views and models.
  */
 Game.prototype.reset = function () {
-    this.activePlayer = CellModel.PLAYER_X;
     this.model.reset();
     this.view.redrawField();
 };
