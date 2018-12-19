@@ -4,10 +4,12 @@ var globals = {app: null, game: null};
  * GameModel. Contains rows, column and the game state information.
  * @param column
  * @param rows
+ * @param winCount
  * @constructor
  */
-function GameModel(column, rows) {
+function GameModel(column, rows, winCount) {
     this.rows = rows;
+    this.winCount = winCount;
     this.tutorialPassed = false;
     this.column = column;
     this.field = [];
@@ -81,9 +83,8 @@ function Game() {}
  * @returns {Game}
  */
 Game.prototype.create = function (rows, column, winCount) {
-    this.model = new GameModel(rows, column);
+    this.model = new GameModel(rows, column, isNaN(winCount) ? Math.min(rows, column) : winCount);
     this.view = new GameView(this);
-    this.winCount = isNaN(winCount) ? Math.min(rows, column) : winCount;
     if (!this.model.tutorialPassed) {
         this.view.displayText("Click on any cell to put " + this.model.activePlayer);
     }
@@ -133,7 +134,7 @@ Game.prototype.getWinLine = function (centerCell, dx, dy) {
         prevCells.push(el);
     }
     var lineLength = prevCells.length + 1 + nextCells.length;
-    if (lineLength >= this.winCount) {
+    if (lineLength >= this.model.winCount) {
         // return the line array in it natural order
         return prevCells.reverse().concat([centerCell]).concat(nextCells);
     }
@@ -218,7 +219,7 @@ Game.prototype.hitCell = function (cellModel, cellView) {
             if (this.model.openedCells === 1) {
                 this.view.displayText("Now you are playing for " + this.model.activePlayer);
             } else if (this.model.openedCells === 2) {
-                this.view.displayText("Try to get " + this.winCount + " in a row");
+                this.view.displayText("Try to get " + this.model.winCount + " in a row");
             } else if (this.model.openedCells === 3) {
                 this.view.displayText("Good luck!");
             } else if (this.model.openedCells === 4) {
