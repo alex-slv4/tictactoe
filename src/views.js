@@ -45,6 +45,7 @@ CellView.prototype.setSelected = function (selected) {
     this.zeroSign.position.set(CellView.CELL_WIDTH * 0.5, CellView.CELL_HEIGHT * 0.5);
 
     if (this.activeSign) {
+        TweenLite.killTweensOf(this.activeSign);
         TweenLite.fromTo(this.activeSign.scale, 0.2, {x: 0, y: 0}, {x: 1, y: 1, ease: Back.easeOut});
     }
 };
@@ -61,7 +62,7 @@ CellView.prototype.update = function () {
     }
     if (this.activeSign) {
         this.activeSign.visible = true;
-        TweenLite.fromTo(this.activeSign.scale, 0.2, {x: 0, y: 0}, {x: 1, y: 1, ease: Back.easeOut});
+        TweenLite.fromTo(this.activeSign.scale, 0.15, {x: 1.7, y: 1.7}, {x: 1, y: 1, ease: Back.easeInOut});
     }
 };
 CellView.prototype.destroy = function() {
