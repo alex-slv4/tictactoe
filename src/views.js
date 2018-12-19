@@ -93,7 +93,13 @@ GameView.prototype = new PIXI.Container();
 GameView.prototype.displayText = function (text) {
     this.label.text = text;
     this.label.position.x = (this.gridContainer.width - this.label.width) * 0.5;
-    this.label.position.y = -this.label.height;
+
+    var duration = 0.15;
+    var toy = -this.label.height * 1.5;
+
+    TweenLite.fromTo(this.label.position, duration, {y: 0}, {y: toy, ease: Back.easeOut});
+    TweenLite.fromTo(this.label, duration, {alpha: 0}, {alpha: 1, ease: Back.easeOut});
+
 };
 /**
  * Draws the grid lines
