@@ -1,6 +1,11 @@
 var globals = {app: null, game: null};
 
-// model
+/**
+ * GameModel. Contains rows, column and the game state information.
+ * @param column
+ * @param rows
+ * @constructor
+ */
 function GameModel(column, rows) {
     this.rows = rows;
     this.column = column;
@@ -17,9 +22,16 @@ function GameModel(column, rows) {
     }
 }
 
+/**
+ * Do we have cells yet.
+ * @returns {boolean}
+ */
 GameModel.prototype.hasCells = function () {
     return this.totalCells > this.openedCells;
 };
+/**
+ * Clear the field. Reset state.
+ */
 GameModel.prototype.reset = function () {
     this.openedCells = 0;
     for (var i = 0; i < this.rows; i++) {
@@ -38,24 +50,25 @@ function CellModel(posX, posY) {
     this.posX = posX;
     this.posY = posY;
     this.opened = false;
-
-    this.toString = function () {
-        return "[" + this.owner + ": " + this.posX + "," + this.posY + "]";
-    };
-    this.reset = function () {
-        this.owner = CellModel.PLAYER_NONE;
-        this.opened = false;
-    }
 }
+
+CellModel.prototype.reset = function() {
+    this.owner = CellModel.PLAYER_NONE;
+    this.opened = false;
+};
+CellModel.prototype.toString = function() {
+    return "[" + this.owner + ": " + this.posX + "," + this.posY + "]";
+};
 
 CellModel.PLAYER_NONE = "";
 CellModel.PLAYER_X = "X";
 CellModel.PLAYER_O = "O";
 
-// the Game Facade
-// nothing here, use create() function
-function Game() {
-}
+/**
+ * GameFacade
+ * @constructor
+ */
+function Game() {}
 
 /**
  * Creates the game
@@ -84,7 +97,7 @@ Game.prototype.getWinLine = function (centerCell, dx, dy) {
     var prevCells = [];
     var nextCells = [];
     var el;
-
+    // FIXME: remove nested functions?
     function getOwnedCellAt(x, y) {
         if (field[x]) {
             var cell = field[x][y];
@@ -117,7 +130,7 @@ Game.prototype.getWinLine = function (centerCell, dx, dy) {
     }
     var lineLength = prevCells.length + 1 + nextCells.length;
     if (lineLength >= this.winCount) {
-        // return the line array in natural order
+        // return the line array in it natural order
         return prevCells.reverse().concat([centerCell]).concat(nextCells);
     }
 };
@@ -157,9 +170,9 @@ Game.prototype.hasWon = function (startCell) {
         // check the cat game case!
         if (!this.model.hasCells()) {
             this.model.state = GameModel.STATE_CAT_GAME;
-            return false;
         }
     }
+    return false;
 };
 /**
  * Open the cell and check winnings.
@@ -168,7 +181,7 @@ Game.prototype.hasWon = function (startCell) {
  */
 Game.prototype.hitCell = function (cellModel, cellView) {
     if (this.model.state !== GameModel.STATE_IN_GAME) {
-        this.restart();
+        this.reset();
         return;
     }
     if (cellModel.opened) {
@@ -180,7 +193,7 @@ Game.prototype.hitCell = function (cellModel, cellView) {
     cellModel.owner = this.activePlayer;
     cellModel.opened = true;
     if (cellView) {
-        cellView.draw();
+        cellView.update();
     }
 
     if (this.hasWon(cellModel)) {
@@ -209,10 +222,10 @@ Game.prototype.resize = function (width, height) {
 /**
  * Recreate the game. Clears the views and models.
  */
-Game.prototype.restart = function () {
+Game.prototype.reset = function () {
     this.activePlayer = CellModel.PLAYER_X;
     this.model.reset();
-    this.view.draw();
+    this.view.redrawField();
 };
 // Resize logic
 globals.onWindowResize = function () {
@@ -226,6 +239,7 @@ globals.app = new PIXI.Application({backgroundColor: 0xffffff});
 document.body.appendChild(globals.app.view);
 
 (function (assets) {
+    // preload assets and start the game after that
     for (var i = 0; i < assets.length; i++) {
         PIXI.loader.add(assets[i], "img/" + assets[i]);
     }
@@ -243,7 +257,7 @@ document.body.appendChild(globals.app.view);
 
 function startTheGame() {
     // create and run the game
-    globals.game = new Game().create(5, 5, 4);
+    globals.game = new Game().create(6, 6, 4); // field size and min wincount TODO: get the game preferences from urlParams
     globals.app.stage.addChild(globals.game.view);
     window.addEventListener("resize", globals.onWindowResize.bind(globals));
     globals.onWindowResize();
