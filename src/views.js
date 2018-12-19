@@ -10,6 +10,7 @@ function CellView(model) {
 
     this.crossSign = new PIXI.Sprite(PIXI.Texture.EMPTY);
     this.zeroSign = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    this.activeSign = undefined;
 
     this.addChild(this.hit);
     this.addChild(this.zeroSign);
@@ -42,16 +43,25 @@ CellView.prototype.setSelected = function (selected) {
     this.zeroSign.anchor.set(0.5);
     this.crossSign.position.set(CellView.CELL_WIDTH * 0.5, CellView.CELL_HEIGHT * 0.5);
     this.zeroSign.position.set(CellView.CELL_WIDTH * 0.5, CellView.CELL_HEIGHT * 0.5);
+
+    if (this.activeSign) {
+        TweenLite.fromTo(this.activeSign.scale, 0.2, {x: 0, y: 0}, {x: 1, y: 1, ease: Back.easeOut});
+    }
 };
 /**
  * Displays correct sign on cell.
  */
 CellView.prototype.update = function () {
+    delete this.activeSign;
     this.zeroSign.visible = this.crossSign.visible = false;
     if (this.model.owner === CellModel.PLAYER_O) {
-        this.zeroSign.visible = true;
+        this.activeSign = this.zeroSign;
     } else if (this.model.owner === CellModel.PLAYER_X) {
-        this.crossSign.visible = true;
+        this.activeSign = this.crossSign;
+    }
+    if (this.activeSign) {
+        this.activeSign.visible = true;
+        TweenLite.fromTo(this.activeSign.scale, 0.2, {x: 0, y: 0}, {x: 1, y: 1, ease: Back.easeOut});
     }
 };
 CellView.prototype.destroy = function() {
