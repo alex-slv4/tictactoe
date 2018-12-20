@@ -206,25 +206,29 @@ Game.prototype.hitCell = function (cellModel, cellView) {
         this.view.displayWinning(this.model.winLines);
         this.view.displayText(this.model.activePlayer + " won!");
     } else {
-        // switch the player's turn
-        switch (this.model.activePlayer) {
-            case CellModel.PLAYER_X:
-                this.model.activePlayer = CellModel.PLAYER_O;
-                break;
-            case CellModel.PLAYER_O:
-                this.model.activePlayer = CellModel.PLAYER_X;
-                break;
-        }
-        if (!this.model.tutorialPassed) {
-            if (this.model.openedCells === 1) {
-                this.view.displayText("Now you are playing for " + this.model.activePlayer);
-            } else if (this.model.openedCells === 2) {
-                this.view.displayText("Try to get " + this.model.winCount + " in a row");
-            } else if (this.model.openedCells === 3) {
-                this.view.displayText("Good luck!");
-            } else if (this.model.openedCells === 4) {
-                this.view.displayText("");
-                this.model.tutorialPassed = true;
+        if (this.model.state === GameModel.STATE_CAT_GAME) {
+            this.view.displayText("CAT GAME");
+        } else {
+            // switch the player's turn
+            switch (this.model.activePlayer) {
+                case CellModel.PLAYER_X:
+                    this.model.activePlayer = CellModel.PLAYER_O;
+                    break;
+                case CellModel.PLAYER_O:
+                    this.model.activePlayer = CellModel.PLAYER_X;
+                    break;
+            }
+            if (!this.model.tutorialPassed) {
+                if (this.model.openedCells === 1) {
+                    this.view.displayText("Now you are playing for " + this.model.activePlayer);
+                } else if (this.model.openedCells === 2) {
+                    this.view.displayText("Try to get " + this.model.winCount + " in a row");
+                } else if (this.model.openedCells === 3) {
+                    this.view.displayText("Good luck!");
+                } else if (this.model.openedCells === 4) {
+                    this.view.displayText("");
+                    this.model.tutorialPassed = true;
+                }
             }
         }
     }
