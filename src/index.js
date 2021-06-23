@@ -240,7 +240,7 @@ Game.prototype.hitCell = function (cellModel, cellView) {
  */
 Game.prototype.resize = function (width, height) {
     var center = new PIXI.Point((width - this.view.width) * 0.5, (height - this.view.height) * 0.5);
-    this.view.position.copy(center);
+    this.view.position.copyFrom(center);
 };
 /**
  * Recreate the game. Clears the views and models.
@@ -263,9 +263,9 @@ document.body.appendChild(globals.app.view);
 (function (assets) {
     // preload assets and start the game after that
     for (var i = 0; i < assets.length; i++) {
-        PIXI.loader.add(assets[i], "img/" + assets[i]);
+        PIXI.Loader.shared.add(assets[i], "img/" + assets[i]);
     }
-    PIXI.loader.load(function () {
+    PIXI.Loader.shared.load(function () {
         startTheGame();
     });
 })([
