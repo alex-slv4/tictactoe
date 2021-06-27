@@ -6,24 +6,23 @@
 function CellView(model) {
     PIXI.Container.call(this);
     this.model = model;
-    this.hit = new PIXI.Graphics().beginFill(0, 0).drawRect(0, 0, CellView.CELL_WIDTH, CellView.CELL_HEIGHT).endFill();
 
     this.crossSign = new PIXI.Sprite(PIXI.Texture.EMPTY);
     this.zeroSign = new PIXI.Sprite(PIXI.Texture.EMPTY);
     this.activeSign = undefined;
 
-    this.addChild(this.hit);
     this.addChild(this.zeroSign);
     this.addChild(this.crossSign);
     this.zeroSign.alpha = this.crossSign.alpha = 0.7;
     this.zeroSign.visible = this.crossSign.visible = false;
-    this.hit.interactive = this.hit.buttonMode = true;
+    this.interactive = this.buttonMode = true;
+    this.hitArea = new PIXI.Rectangle(0, 0, CellView.CELL_WIDTH, CellView.CELL_HEIGHT);
 
     this.onDown = function () {
         globals.game.hitCell(this.model, this);
     };
     this.setSelected(false);
-    this.hit.on("pointerdown", this.onDown.bind(this));
+    this.on("pointerdown", this.onDown.bind(this));
 }
 
 CellView.CELL_WIDTH = 80;
@@ -64,10 +63,6 @@ CellView.prototype.update = function () {
         this.activeSign.visible = true;
         TweenLite.fromTo(this.activeSign.scale, 0.15, {x: 1.7, y: 1.7}, {x: 1, y: 1, ease: Back.easeInOut});
     }
-};
-CellView.prototype.destroy = function() {
-    this.hit.off("pointerdown");
-    PIXI.Container.prototype.destroy.call(this);
 };
 
 /**
@@ -196,7 +191,7 @@ GameView.prototype.drawCrossLine = function (from, to) {
     var angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
 
     var line = new PIXI.Sprite(PIXI.utils.TextureCache["line-red.svg"]);
-    line.position.copy(p1);
+    line.position.copyFrom(p1);
     line.rotation = angle;
     line.width = distance;
     this.topContainer.addChild(line);

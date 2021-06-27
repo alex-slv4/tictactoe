@@ -257,7 +257,7 @@ globals.onWindowResize = function () {
     this.game.resize(width, height);
 };
 // init PIXI app
-globals.app = new PIXI.Application({backgroundColor: 0xffffff});
+globals.app = new PIXI.Application({backgroundColor: 0xffffff, antialias: true});
 document.body.appendChild(globals.app.view);
 
 (function (assets) {
