@@ -2,4 +2,4 @@
 
 Vanilla javascript, pixi.js, gsap
 
-Preview – https://alex-slv4.github.io/tictactoe/
+Preview – https://slavshik.github.io/tictactoe/
